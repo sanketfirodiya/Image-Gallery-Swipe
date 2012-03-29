@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Image Gallery Swipe</title>
+<style type="text/css" media="screen">
+#main-div{
+position:relative;
+left: 2%; 
+top:00%; 
+height:400px; 
+width:650px;
+}
+
+#left-arrow{
+position:absolute;
+left: 0%; 
+top:40%;
+}
+
+#picture-frame{
+line-height:400px; 
+position:absolute; 
+left: 12%; 
+top:0%; 
+width:500px;
+height:400px; 
+background-repeat:no-repeat;
+}
+
+#magnifying_glass_image{
+position:absolute; 
+left: 94%; 
+top:5%;
+}
+
+#right-arrow{
+position:absolute;
+left: 95%; 
+top:40%;
+}
+
+.leftArrow
+{
+    background-image:url(images/left_arrow.gif);
+    background-color:transparent;
+    border:none;
+    cursor:pointer;
+	height: 30px; width: 30px;
+}
+
+.rightArrow
+{
+    background-image:url(images/right_arrow.gif);
+    background-color:transparent;
+    border:none;
+    cursor:pointer;
+	height: 30px; width: 30px;
+}
+
+#ImageList, #CurrentImageID{
+display:none;
+}
+
+</style>
+	<script type="text/javascript">
+	    !window.jQuery && document.write('<script src="jquery-1.4.3.min.js"><\/script>');
+	</script>
+	<script src="jquery.fancybox-1.3.4/fancybox/jquery.fancybox-1.3.4.pack.js" type="text/javascript"></script>    
+    <link href="jquery.fancybox-1.3.4/fancybox/jquery.fancybox-1.3.4.css" rel="stylesheet" type="text/css" />
+    <script src="jquery.fancybox-1.3.4/fancybox/jquery.easing-1.3.pack.js" type="text/javascript"></script>
+	<input id="ImageList" type="text" value="1.jpg,2.jpg,3.jpg"/>
+	<input id="CurrentImageID" type="text" value="1.jpg"/>
+<div id="main-div" >
+              <div id="left-arrow" ><input id="left_arrow" type="button" class="leftArrow" onclick="return prevImageDS('bg')" /></div>
+              <div id="picture-frame" class="swipe-element" ontouchcancel="touchCancel(event);" ontouchmove="touchMove(event);" ontouchend="touchEnd(event);" ontouchstart="touchStart(event,'bg');">            
+                <img src="1.jpg" alt="screenshots" id="bg" />
+              </div>
+              <div id="magnifying_glass_image" >
+                <a id="example1" href="./images/zoom.png"><img alt="zoom" src="./images/zoom.png" onclick="return flipImage();" /></a>
+              </div>
+              <div id="right-arrow" ><input id="right_arrow" type="button" class="rightArrow" onclick="return nextImageDS('bg')" /></div>
+</div>
+
+<script type="text/javascript">
+    // TOUCH-EVENTS SINGLE-FINGER SWIPE-SENSING JAVASCRIPT
+// Courtesy of PADILICIOUS.COM and MACOSXAUTOMATION.COM
+var photoCount = 3; // the number of images in the slideshow
+var fingerCount = 0;
+var startX = 0;
+var startY = 0;
+var curX = 0;
+var curY = 0;
+var deltaX = 0;
+var deltaY = 0;
+var horzDiff = 0;
+var vertDiff = 0;
+var minLength = 72; // the shortest distance the user may swipe
+var swipeLength = 0;
+var swipeAngle = null;
+var swipeDirection = null;
+var triggerElementID = null; // this variable is used throughout the script
+// The 4 Touch Event Handlers
+// the touchStart handler should also receive the ID of the triggering element
+// make sure it's ID is passed in the event call placed in the element declaration, like:
+// <div id="picture-frame" ontouchstart="touchStart(event,'picture-frame');" ontouchend="touchEnd(event);" ontouchmove="touchMove(event);" ontouchcancel="touchCancel(event);"></div>
+
+function touchStart(event,passedID) {
+// disable the standard ability to select the touched object
+event.preventDefault();
+// get the total number of fingers touching the screen
+fingerCount = event.touches.length;
+// since we're looking for a swipe (single finger) and not a gesture (multiple fingers),
+// check that only one finger was used
+if ( fingerCount == 1 ) {
+// get the coordinates of the touch
+startX = event.touches[0].pageX;
+startY = event.touches[0].pageY;
+// store the triggering element ID
+triggerElementID  = passedID;
+
+} else {
+// more than one finger touched so cancel
+touchCancel(event);
+}
+}
+
+function touchMove(event) {
+event.preventDefault();
+if ( event.touches.length == 1 ) {
+curX = event.touches[0].pageX;
+curY = event.touches[0].pageY;
+} else {
+touchCancel(event);
+}
+}
+
+function touchEnd(event,passedID) {
+event.preventDefault();
+// check to see if more than one finger was used and that there is a and ending coordinate
+if ( fingerCount == 1 && curX != 0 ) {
+// use the Distance Formula to determine the length of the swipe
+swipeLength = Math.round(Math.sqrt(Math.pow(curX - startX,2) + Math.pow(curY - startY,2)));
+// if the user swiped more than the minimum length, perform the appropriate action
+if ( swipeLength >= minLength ) {
+caluculateAngle();
+determineSwipeDirection();
+processingRoutine();
+touchCancel(event);
+} else {
+touchCancel(event);
+}
+} else {
+touchCancel(event);
+}
+}
+
+function touchCancel(event) {
+// reset the variables back to default values
+fingerCount = 0;
+startX = 0;
+startY = 0;
+curX = 0;
+curY = 0;
+deltaX = 0;
+deltaY = 0;
+horzDiff = 0;
+vertDiff = 0;
+swipeLength = 0;
+swipeAngle = null;
+swipeDirection = null;
+triggerElementID = null;
+}
+function caluculateAngle() {
+var X = startX-curX;
+var Y = curY-startY;
+var Z = Math.round(Math.sqrt(Math.pow(X,2)+Math.pow(Y,2))); //the distance - rounded - in pixels
+var r = Math.atan2(Y,X); //angle in radians (Cartesian system)
+swipeAngle = Math.round(r*180/Math.PI); //angle in degrees
+if ( swipeAngle < 0 ) { swipeAngle = 360 - Math.abs(swipeAngle); }
+}
+function determineSwipeDirection() {
+if ( (swipeAngle <= 45) && (swipeAngle >= 0) ) {
+swipeDirection = 'left';
+} else if ( (swipeAngle <= 360) && (swipeAngle >= 315) ) {
+swipeDirection = 'left';
+} else if ( (swipeAngle >= 135) && (swipeAngle <= 225) ) {
+swipeDirection = 'right';
+} else if ( (swipeAngle > 45) && (swipeAngle < 135) ) {
+swipeDirection = 'down';
+} else {
+swipeDirection = 'up';
+}
+}
+// the function for performing actions, possibly on the triggering element
+function processingRoutine() {
+// for this example, only respond to horizontal swipes
+if ( swipeDirection == 'left' ) 
+    {
+        nextImage();
+    } 
+else if ( swipeDirection == 'right' ) 
+    {
+        prevImage();
+    }
+}
+<!-- Picture Load Routines -->
+// images are assumed to be named in this format "X.jpg" where X is a number within the count of images
+// images are assumed to be in a folder named "photos" placed at the same level as this file
+function prevImage()
+{
+
+setTimeout("ImageSwipeLeft()", 100);
+return false;
+} 
+
+function nextImage()
+{
+
+setTimeout("ImageSwipeRight()", 100);
+return false;
+}
+
+//for the desktop version
+function nextImageDS(div)
+{
+triggerElementID = document.getElementById(div).id;
+setTimeout("ImageSwipeRight()", 100);
+return false;
+}
+
+function prevImageDS(div)
+{
+triggerElementID = document.getElementById(div).id;
+setTimeout("ImageSwipeLeft()", 100);
+return false;
+} 
+
+function ImageSwipeLeft()
+{    
+    triggerElementID = 'bg';
+    var OGWidth = 0;
+    var OGHeight = 0;
+    var OGRatio = 0;
+    var nextImgNum = 0;
+    var e = document.getElementById("ImageList").value;
+
+    var imageurls = e.split(',');
+
+    var NoOfPhotos = (imageurls.length - 1);
+    
+    var currentImgNum = document.getElementById("CurrentImageID.").value;
+   
+    if (currentImgNum == 0) 
+        {
+            nextImgNum = NoOfPhotos;        
+        }
+    else 
+        {
+            nextImgNum = currentImgNum - 1;
+        };
+
+        var nextImgName = imageurls[nextImgNum];
+        
+        document.getElementById(triggerElementID).src = nextImgName;
+        
+        document.getElementById("CurrentImageID").value = nextImgNum;
+        
+        return false;
+}
+
+function ImageSwipeRight()
+{    
+    triggerElementID = 'bg';    
+
+    var e = document.getElementById("ImageList").value;
+
+    var imageurls = e.split(',');
+
+    var NoOfPhotos = (imageurls.length - 1);
+    
+    var currentImgNum = document.getElementById("CurrentImageID").value;
+
+    if (currentImgNum == NoOfPhotos) 
+    {
+        nextImgNum = 0;        
+    }
+    else 
+    {
+        nextImgNum = parseInt(currentImgNum) + 1;
+    };
+
+     var nextImgName = imageurls[nextImgNum];
+
+     document.getElementById(triggerElementID).src = nextImgName;
+
+     document.getElementById("CurrentImageID").value = nextImgNum;
+
+     return false;
+}
+</script>
+
+<script type="text/javascript">
+    function loadInitialImage() {
+        var triggerElementID = "bg";
+
+        var e = document.getElementById("ImageList").value;
+
+        var imageurls = e.split(',');
+
+        var nextImgName = imageurls[0];
+
+        document.getElementById(triggerElementID).src = nextImgName;
+
+        return false;
+    }
+
+    function initializeImageZoom(div) {
+        var ModalDiv = document.getElementById("modalDiv");
+        ModalDiv.style.display = "block";
+        var Div = document.getElementById(div);
+        var currentImage = document.getElementById('bg').src;
+        Div.src = currentImage;
+        return false;
+    }
+</script>
+
+<script type="text/javascript">
+
+    function activateFancyBox() {
+
+        var image = "a#" + document.getElementById("example1").id;
+        $(image).fancybox({
+            'opacity': false,
+            'overlayShow': true,
+            'transitionIn': 'elastic',
+            'transitionOut': 'elastic'
+        });
+        document.getElementById("example1").href = "./images/1.png";
+        return false;
+    }
+
+    function flipImage() {
+        var currentImage = document.getElementById('bg').src;
+        document.getElementById("example1").href = currentImage;
+        return false;
+    }
+
+</script>
+
+</body>
+</html>
